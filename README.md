@@ -6,7 +6,7 @@ Free code signing is provided by the [SignPath Foundation](https://signpath.org/
 
 ### Team Roles
 
-*   **Approvers**: [あなたのGitHubユーザー名](https://github.com/あなたのGitHubユーザー名)
+*   **Approvers**: [Windowtranslator](https://github.com/Windowtranslator)
 
 ### Privacy Policy
 
