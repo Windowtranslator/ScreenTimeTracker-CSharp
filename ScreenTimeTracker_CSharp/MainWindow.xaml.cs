@@ -120,7 +120,13 @@ namespace ScreenTimeTracker_CSharp
             {
                 if (StartupCheckBox.IsChecked == true)
                 {
-                    string exePath = Assembly.GetExecutingAssembly().Location;
+                    // ★★★ 修正箇所 ★★★
+                    // 常に起動元の.exeファイルへのパスを返す、より確実な方法
+                    string exePath = Environment.ProcessPath;
+
+                    // もし古い.NET Frameworkを使っている場合は、こちらの方が確実な場合があります
+                    // string exePath = Process.GetCurrentProcess().MainModule.FileName;
+
                     _startupRegistryKey.SetValue(_appName, $"\"{exePath}\"");
                 }
                 else
@@ -130,7 +136,7 @@ namespace ScreenTimeTracker_CSharp
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"スタートアップ設定の更新に失敗しました: {ex.Message}");
+                System.Windows.MessageBox.Show($"スタートアップ設定の更新に失敗しました: {ex.Message}");
             }
         }
 
