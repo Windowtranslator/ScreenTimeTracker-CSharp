@@ -1,0 +1,64 @@
+name: Build, Sign, and Release
+
+# このワークフローは、vで始まるタグ (例: v1.0.0) がプッシュされたときにだけ実行される
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build-and-sign:
+    runs-on: windows-latest # Windowsアプリなので、Windows環境で実行する
+
+    steps:
+    # 1. リポジトリのコードをチェックアウトする
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    # 2. .NET環境をセットアップする (あなたのプロジェクトの.NETバージョンに合わせてください)
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v3
+      with:
+        dotnet-version: '9.0.x' # .NET 8 を使用する場合。net9.0-windowsなら '9.0.x'
+
+    # 3. 必要なワークロードをインストールする (ClickOnce発行に必要)
+    - name: Install .NET Workloads
+      run: dotnet workload install wpf
+
+    # 4. プロジェクトの依存関係を復元する
+    - name: Restore dependencies
+      run: dotnet restore
+
+    # 5. ClickOnceインストーラーを発行する
+    # ScreenTimeTracker_CSharp.csproj の部分は、あなたのプロジェクトファイル名に合わせてください
+    - name: Publish ClickOnce
+      run: dotnet publish ./ScreenTimeTracker_CSharp/ScreenTimeTracker_CSharp.csproj -c Release -r win-x64 --self-contained false --output ./publish
+
+    # 6. SignPath.ioで署名する
+    - name: Sign with SignPath
+      uses: signpath/signpath-action@v2
+      with:
+        # ./publish フォルダの中にある setup.exe を署名対象とする
+        artifact-path: './publish/setup.exe'
+        
+        # SignPathのプロジェクトID (SignPathのプロジェクトページのURL末尾のUUID)
+        project-id: '[あなたのSignPathプロジェクトID]'
+        
+        # SignPathのAPIトークン (GitHubのSecretsから読み込む)
+        signpath-api-token: ${{ secrets.SIGNPATH_API_TOKEN }}
+
+    # 7. GitHubにリリースを作成し、署名済みファイルをアップロードする
+    - name: Create GitHub Release
+      uses: actions/create-release@v1
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      with:
+        # タグ名をリリース名として使用
+        tag_name: ${{ github.ref }}
+        release_name: Release ${{ github.ref }}
+        draft: false
+        prerelease: false
+        # 署名済みの setup.exe をリリースに添付する
+        asset_path: './publish/setup.exe'
+        asset_name: 'ScreenTimeTracker-Setup.exe'
+        asset_content_type: 'application/octet-stream'
